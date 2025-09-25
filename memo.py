@@ -215,7 +215,7 @@ class MemoApp:
 
         for memo in results:
             timestamp_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(memo[0]))
-            listbox.insert(tk.END, f"{memo[1]}                           - {timestamp_str}")  # 显示标题和时间戳
+            listbox.insert(tk.END, f"{timestamp_str} ------------------------------- {memo[1]}")  # 显示标题和时间戳
 
         def on_select(event):
             """点击列表项后查看完整内容"""
@@ -242,14 +242,14 @@ class MemoApp:
 
         all_memos_window = tk.Toplevel(self.root)
         all_memos_window.title("所有备忘录")
-        all_memos_window.geometry("500x400")
+        all_memos_window.geometry("450x300")
 
         listbox = tk.Listbox(all_memos_window, width=50, height=15, font=("Arial", 12))
-        listbox.pack(padx=10, pady=10)
+        listbox.pack(padx=5, pady=5)
 
         for memo in results:
             timestamp_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(memo[0]))
-            listbox.insert(tk.END, f"{memo[1]} - {timestamp_str}")  # 显示标题和时间戳
+            listbox.insert(tk.END, f"{timestamp_str} ------------------------------- {memo[1]}")  # 显示标题和时间戳
 
 
         def on_select(event):
@@ -267,13 +267,13 @@ class MemoApp:
         """弹出搜索框"""
         search_popup = tk.Toplevel(self.root)
         search_popup.title("搜索备忘录")
-        search_popup.geometry("400x150")
+        search_popup.geometry("400x70")
 
-        search_label = tk.Label(search_popup, text="请输入搜索内容：", font=("Arial", 12))
-        search_label.pack(pady=10)
+        # search_label = tk.Label(search_popup, text="请输入搜索内容：", font=("Arial", 12))
+        # search_label.pack(padx=1,pady=1)
 
         search_entry = tk.Entry(search_popup, width=40, font=("Arial", 12))
-        search_entry.pack(pady=5)
+        search_entry.pack(padx=5,pady=1)
 
         def on_search(event=None):
             """回车进行搜索"""
@@ -284,8 +284,8 @@ class MemoApp:
 
         search_entry.bind("<Return>", on_search)
 
-        search_button = tk.Button(search_popup, text="搜索", command=on_search, font=("Arial", 12), bg="#2196F3", fg="white")
-        search_button.pack(pady=10)
+        search_button = tk.Button(search_popup, text="搜索", command=on_search, font=("Arial", 12), bg="#868E94", fg="white")
+        search_button.pack(pady=5)
 
         search_entry.focus_set()  # 聚焦到搜索框
 
