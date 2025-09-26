@@ -60,22 +60,16 @@ class MemoApp:
 
         self.root.attributes('-alpha', 0.8)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
         # self.root.wm_attributes('-transparentcolor', '#f2f1f1')  # 将白色设为透明'#fc0000'
-
-
         # self.root.call("wm", "attributes", ".", "-alpha", "0.6") # Window Opacity 0.0-1.0
 
 
         # 历史备忘录显示区域
         self.memo_list_frame = tk.Frame(self.root)#, bg="#f0f0f0"
-        # self.memo_list_frame.attributes('-alpha', 0.8)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
-
         self.memo_list_frame.grid(row=0, column=0, pady=0, padx=0)
-        # self.memo_list_frame.call("wm", "attributes", ".", "-alpha", "0.6") # Window Opacity 0.0-1.0
-
         # 输入框
         self.memo_content = tk.Text(self.root, height=30, width=40, font=(self.font, 18),bg="#fff553")
         self.memo_content.grid(row=1, column=0, pady=0, padx=0)
-
+        #保存按钮
         # self.save_button = tk.Button(self.root, text="保存", command=self.save_memo, font=(self.font, 12), bg="#4CAF50", fg="white", relief="solid")
         # self.save_button.grid(row=2, column=0, pady=10, padx=10)
 
@@ -107,7 +101,6 @@ class MemoApp:
 
         self.init_db()  # 初始化数据库
         self.load_memos()  # 加载历史备忘录
-        # self.root.after(1000,self.load_memos)
         self.memos = []  # 储存备忘录
 
         # 自动保存用户输入
@@ -124,13 +117,6 @@ class MemoApp:
                      (timestamp REAL, title TEXT, content TEXT)''')
         conn.commit()
         conn.close()
-
-
-    # def insert_text(self, event=None):
-    #     """插入字符 'Hello' 到输入框"""
-    #     current_text = self.entry.get()  # 获取当前输入框的内容
-    #     self.entry.delete(0, tk.END)  # 删除当前内容
-    #     self.entry.insert(tk.END, current_text + 'Hello')  # 插入指定字符
 
 
     def insert_text_angle_brackets(self, event=None):
@@ -190,7 +176,7 @@ class MemoApp:
         # 使用正则匹配括号内的内容
         matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', text)
         # 输出匹配结果
-        print(matches)
+        # print(matches)
         for plaintext in matches:
             encrypted = encrypt_text(plaintext,self.cipher)
             # print("加密后：", encrypted)
@@ -306,23 +292,10 @@ class MemoApp:
         if results == []:
             self.clear_memos()
 
-        # #     # self.memo_list_frame.config(height=0)
-        # #     self.memo_content.grid(pady=1)
-        #     # 强制更新布局
-        #     self.memo_list_frame.grid_forget()  # 移除父容器的布局
-        #     self.memo_list_frame.grid()         # 重新布局
-        #     self.memo_content.grid()         # 重新布局
-            
-        #     self.memo_content.grid(row=1, column=0, pady=1, padx=1)
-
-        # print(self.memo_content.config(),results == [])
         self.root.after(1000,self.load_memos)
 
     def clear_memos(self):
         """清空历史记录"""
-        # print(self.memo_list_frame.config())
-        # for widget in self.memo_list_frame.winfo_children():
-        #     widget.destroy()
     # 如果 memo_list_frame 已经存在，先销毁它
         if hasattr(self, 'memo_list_frame') and self.memo_list_frame:
             self.memo_list_frame.destroy()
@@ -330,20 +303,7 @@ class MemoApp:
         self.memo_list_frame = tk.Frame(self.root)#, bg="#f0f0f0"
         
         self.memo_list_frame.grid(row=0, column=0, pady=0, padx=0)
-        # 输入框
-        # self.memo_content.grid(row=1, column=0, pady=1, padx=1)
 
-        #         # 手动调整父容器的位置
-        # self.memo_list_frame.update_idletasks()  # 确保父容器的布局更新
-        # self.memo_content.grid_propagate(False)
-        # self.memo_content.grid_propagate(True)
-            # widget.grid_remove()  # 使用 grid_remove() 移除组件
-        # 禁止自动调整大小，或者手动设置高度为零
-        # self.memo_list_frame.grid_propagate(False)
-        # self.memo_list_frame.config(height=0)
-        # 强制更新布局
-        # self.memo_list_frame.grid_forget()  # 移除父容器的布局
-        # self.memo_list_frame.grid()         # 重新布局
         
     def display_memo(self, title, timestamp_str, memo):
         """在主界面显示历史备忘录"""
@@ -561,10 +521,5 @@ class MemoApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    # bg_image = PhotoImage(file="2.png")
-
-    # # 创建一个标签并放置图片作为背景
-    # bg_label = tk.Label(root, image=bg_image)
-    # bg_label.place(relwidth=1, relheight=1)
     app = MemoApp(root)
     root.mainloop()
