@@ -3,7 +3,49 @@ from tkinter import messagebox, simpledialog
 import sqlite3
 import time
 import threading
+import re
 
+from cryptography.fernet import Fernet
+
+# 生成密钥（保存到本地，只需要生成一次）
+# key = Fernet.generate_key()
+# with open("key.key", "wb") as f:
+#     f.write(key)
+
+# # 加载密钥
+# with open("key.key", "rb") as f:
+#     key = f.read()
+
+KEY_FILE = "key.key"
+# -------------------------------
+# 读取密钥
+# -------------------------------
+def load_key():
+    with open(KEY_FILE, "rb") as f:
+        return f.read()
+    
+
+
+# -------------------------------
+# 3) 加解密
+# -------------------------------
+def encrypt_text(plaintext: str, fernet: Fernet) -> str:
+    return fernet.encrypt(plaintext.encode("utf-8")).decode("utf-8")
+
+def decrypt_text(token: str, fernet: Fernet) -> str:
+    return fernet.decrypt(token.encode("utf-8")).decode("utf-8")
+
+
+# 待加密的账号密码
+# plaintext = "账号: user@example.com\n密码: mypassword123"
+
+# # 加密
+# encrypted = encrypt_text(plaintext,cipher)
+# print("加密后：", encrypted)
+
+# # 解密
+# decrypted = decrypt_text(encrypted,cipher)
+# print("解密后：", decrypted)
 
 
 
@@ -13,14 +55,14 @@ class MemoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Memo")
-        self.root.geometry("450x450+850+1")
-        self.root.configure(bg="#f0f0f0")  # 背景颜色
+        self.root.geometry("450x450+850+0")
+        self.root.configure(bg="#fff553")  # 背景颜色
         self.root.overrideredirect(True)
 
         # self.root.iconify()  # 最小化窗口，保留在任务栏中
 
-        # self.root.attributes('-alpha', 0.4)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
-        # self.root.wm_attributes('-transparentcolor', 'white')  # 将白色设为透明'#fc0000'
+        self.root.attributes('-alpha', 0.8)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
+        # self.root.wm_attributes('-transparentcolor', '#f2f1f1')  # 将白色设为透明'#fc0000'
 
 
         # self.root.call("wm", "attributes", ".", "-alpha", "0.6") # Window Opacity 0.0-1.0
@@ -30,11 +72,12 @@ class MemoApp:
         self.memo_list_frame = tk.Frame(self.root)#, bg="#f0f0f0"
         # self.memo_list_frame.attributes('-alpha', 0.8)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
 
-        self.memo_list_frame.grid(row=0, column=0, pady=1, padx=3)
+        self.memo_list_frame.grid(row=0, column=0, pady=0, padx=0)
+        # self.memo_list_frame.call("wm", "attributes", ".", "-alpha", "0.6") # Window Opacity 0.0-1.0
 
         # 输入框
-        self.memo_content = tk.Text(self.root, height=30, width=40, font=("Arial", 18))
-        self.memo_content.grid(row=1, column=0, pady=1, padx=1)
+        self.memo_content = tk.Text(self.root, height=30, width=40, font=("Arial", 18),bg="#fff553")
+        self.memo_content.grid(row=1, column=0, pady=0, padx=0)
 
         # self.save_button = tk.Button(self.root, text="保存", command=self.save_memo, font=("Arial", 12), bg="#4CAF50", fg="white", relief="solid")
         # self.save_button.grid(row=2, column=0, pady=10, padx=10)
@@ -53,6 +96,8 @@ class MemoApp:
         self.root.bind("<Control-f>", lambda event: self.show_search_popup())
         self.root.bind("<Control-l>", lambda event: self.show_all_memos())
         self.root.bind("<Control-b>", lambda event: self.on_close())
+        self.root.bind("<Control-r>", lambda event: self.insert_text_angle_brackets())
+
 
 
         # 定时折叠时间（分钟）
@@ -66,6 +111,9 @@ class MemoApp:
 
         # 自动保存用户输入
         # self.memo_content.bind("<KeyRelease>", self.auto_save)
+        #加密
+        self.key = load_key()
+        self.cipher = Fernet(self.key)
 
     def init_db(self):
         """初始化数据库"""
@@ -77,9 +125,86 @@ class MemoApp:
         conn.close()
 
 
+    # def insert_text(self, event=None):
+    #     """插入字符 'Hello' 到输入框"""
+    #     current_text = self.entry.get()  # 获取当前输入框的内容
+    #     self.entry.delete(0, tk.END)  # 删除当前内容
+    #     self.entry.insert(tk.END, current_text + 'Hello')  # 插入指定字符
+
+
+    def insert_text_angle_brackets(self, event=None):
+        """插入字符 '<>'，并将光标放在 <> 中间"""
+        # 获取当前输入框的光标位置
+        # 获取当前光标位置
+        cursor_position = self.memo_content.index(tk.INSERT)
+        
+        # 插入 '《》'
+        self.memo_content.insert(cursor_position, '<ENC><DEC>')
+
+        # 将光标移动到《》的中间
+        self.memo_content.mark_set(tk.INSERT, f"{cursor_position}+5c")  # 光标移到《后面
+    
+    def replace_in_brackets(self,text, replacements):
+        """
+        匹配括号内的内容，并逐个替换为给定的替换文本。
+
+        Args:
+        text (str): 输入文本。
+        replacements (list): 替换的内容列表。
+
+        Returns:
+        str: 替换后的文本。
+        """
+        # 正则表达式匹配括号内的内容
+        pattern = r'\<ENC\>(.*?)\<DEC\>'  # 匹配圆括号内的内容
+
+        # 替换函数，逐个替换括号内的内容
+        def replacer(match):
+            # 从替换列表中依次取出替换内容
+            nonlocal replacements
+            replacement = replacements.pop(0)  # 获取并移除列表中的第一个元素
+            return f'<ENC>{replacement}<DEC>'
+
+        # 使用re.sub并传入替换函数
+        return re.sub(pattern, replacer, text)
+
+    def replace_same_in_brackets(self,text, replacement):
+        """
+        匹配括号内的内容，并替换为给定的替换文本。
+
+        Args:
+        text (str): 输入文本。
+        replacement (str): 替换文本。
+
+        Returns:
+        str: 替换后的文本。
+        """
+        # 正则表达式匹配括号内的内容
+        pattern = r'\<ENC\>(.*?)\<DEC\>'  # 匹配圆括号内的内容
+        # 使用re.sub替换括号内的内容
+        return re.sub(pattern, f'<ENC>{replacement}<DEC>', text)
+
+    def re_and_enc(self,text):
+        replacements =[]
+        # 使用正则匹配括号内的内容
+        matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', text)
+        # 输出匹配结果
+        print(matches)
+        for plaintext in matches:
+            encrypted = encrypt_text(plaintext,self.cipher)
+            print("加密后：", encrypted)
+            replacements.append(encrypted)
+        print(replacements)
+        result = self.replace_in_brackets(text, replacements)
+        return result
+    
     def save_memo(self):
         """保存备忘录内容到数据库"""
         content = self.memo_content.get("1.0", tk.END).strip()
+        print(content)
+        content = self.re_and_enc(content)
+        print(content)
+
         if content:
             timestamp = time.time()
             title = content[:10]  # 简略标题
@@ -116,7 +241,7 @@ class MemoApp:
         """设置定时折叠任务"""
         fold_time = self.fold_time_minutes * 60  # 将分钟转换为秒
         # threading.Timer(fold_time, self.fold_memo, [title, content, timestamp]).start()
-        self.after(250,self.schedule_fold)
+        self.after(fold_time,self.schedule_fold)
 
     def fold_memo(self, title, content, timestamp):
         """折叠备忘录"""
@@ -203,7 +328,7 @@ class MemoApp:
 
         self.memo_list_frame = tk.Frame(self.root)#, bg="#f0f0f0"
         
-        self.memo_list_frame.grid(row=0, column=0, pady=1, padx=3)
+        self.memo_list_frame.grid(row=0, column=0, pady=0, padx=0)
         # 输入框
         # self.memo_content.grid(row=1, column=0, pady=1, padx=1)
 
@@ -232,13 +357,17 @@ class MemoApp:
 
     def show_full_memo(self, memo):
         """显示完整的备忘录内容"""
+        #展示前替换加密字符
+        memo_show = self.replace_same_in_brackets(memo[2],'***********')
+        #
+
         full_memo_window = tk.Toplevel(self.root)
         full_memo_window.title("view memo")
         full_memo_window.geometry("450x300")
 
         timestamp_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(memo[0]))
         text_widget = tk.Text(full_memo_window, width=50, height=20, font=("Arial", 12))
-        text_widget.insert(tk.END, f"标题：{memo[1]}\n保存时间：{timestamp_str}\n\n内容：\n{memo[2]}")
+        text_widget.insert(tk.END, f"标题：{memo[1]}\n保存时间：{timestamp_str}\n\n内容：\n{memo_show}")
         text_widget.pack(padx=1, pady=1)
         text_widget.config(state=tk.DISABLED)
 
