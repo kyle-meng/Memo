@@ -193,18 +193,18 @@ class MemoApp:
         print(matches)
         for plaintext in matches:
             encrypted = encrypt_text(plaintext,self.cipher)
-            print("加密后：", encrypted)
+            # print("加密后：", encrypted)
             replacements.append(encrypted)
-        print(replacements)
+        # print(replacements)
         result = self.replace_in_brackets(text, replacements)
         return result
     
     def save_memo(self):
         """保存备忘录内容到数据库"""
         content = self.memo_content.get("1.0", tk.END).strip()
-        print(content)
+        # print(content)
         content = self.re_and_enc(content)
-        print(content)
+        # print(content)
 
         if content:
             timestamp = time.time()
@@ -374,7 +374,7 @@ class MemoApp:
         :param event: 事件对象
         :param index: 区分点击区域的索引
         """
-        print(f"点击了第 {index + 1} 段 <ENC>***********<DEC>")
+        print(f"点击了第 {index + 1} 段加密内容")
         matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', test_original)
         # 输出匹配结果
         # print(matches)
