@@ -4,7 +4,6 @@ import sqlite3
 import time
 import threading
 
-from tkinter import PhotoImage
 
 
 
@@ -14,11 +13,17 @@ class MemoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Memo")
-        self.root.geometry("450x450")
+        self.root.geometry("450x450+850+1")
         self.root.configure(bg="#f0f0f0")  # 背景颜色
-        # self.root.attributes('-alpha', 0.5)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
-        # self.root.wm_attributes('-transparentcolor', 'white')  # 将白色设为透明
+        self.root.overrideredirect(True)
 
+        # self.root.iconify()  # 最小化窗口，保留在任务栏中
+
+        # self.root.attributes('-alpha', 0.4)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
+        # self.root.wm_attributes('-transparentcolor', 'white')  # 将白色设为透明'#fc0000'
+
+
+        # self.root.call("wm", "attributes", ".", "-alpha", "0.6") # Window Opacity 0.0-1.0
 
 
         # 历史备忘录显示区域
@@ -47,14 +52,17 @@ class MemoApp:
         self.root.bind("<Control-s>", lambda event: self.save_memo())
         self.root.bind("<Control-f>", lambda event: self.show_search_popup())
         self.root.bind("<Control-l>", lambda event: self.show_all_memos())
+        self.root.bind("<Control-b>", lambda event: self.on_close())
 
 
         # 定时折叠时间（分钟）
-        self.fold_time_minutes = 10
+        self.fold_time_minutes = 2
         self.new_memo_interval = 60 * 60  # 每小时生成新备忘录（默认1小时）
 
         self.init_db()  # 初始化数据库
         self.load_memos()  # 加载历史备忘录
+        # self.root.after(1000,self.load_memos)
+        self.memos = []  # 储存备忘录
 
         # 自动保存用户输入
         # self.memo_content.bind("<KeyRelease>", self.auto_save)
@@ -98,10 +106,31 @@ class MemoApp:
             # 清空输入框并通知保存成功
             self.memo_content.delete("1.0", tk.END)
             # messagebox.showinfo("提示", "备忘录保存成功！")
-            self.schedule_fold(title, content, timestamp)  # 安排折叠任务
+            # self.schedule_fold(title, content, timestamp)  # 安排折叠任务
 
         else:
             messagebox.showwarning("警告", "备忘录内容不能为空！")
+
+
+    def schedule_fold(self, title, content, timestamp):
+        """设置定时折叠任务"""
+        fold_time = self.fold_time_minutes * 60  # 将分钟转换为秒
+        # threading.Timer(fold_time, self.fold_memo, [title, content, timestamp]).start()
+        self.after(250,self.schedule_fold)
+
+    def fold_memo(self, title, content, timestamp):
+        """折叠备忘录"""
+        simplified_content = content[:10]  # 简略显示前10个字符
+        timestamp_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))
+        
+        # 创建折叠后的备忘录显示
+        memo_label = tk.Label(self.memo_list_frame, text=f"{simplified_content} - {timestamp_str}", font=("Arial", 12), bg="#fffae6", relief="solid", anchor="w", padx=10)
+        memo_label.grid(sticky="w", padx=5, pady=5)
+
+        # 保存备忘录
+        self.memos.append({"title": simplified_content, "content": content, "timestamp": timestamp_str})
+        # self.load_memos()
+
 
     def auto_save(self, event=None):
         """自动保存输入的内容"""
@@ -135,7 +164,7 @@ class MemoApp:
         # 获取当前时间的时间戳
         current_time = time.time()
         # 只加载近10分钟内的记录
-        time_threshold = current_time - (2 * 60)  # 10分钟
+        time_threshold = current_time - (0.1 * 60)  # 10分钟
 
         conn = sqlite3.connect('memo.db')
         c = conn.cursor()
@@ -148,6 +177,48 @@ class MemoApp:
             timestamp_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(memo[0]))
             self.display_memo(title, timestamp_str, memo)
 
+        if results == []:
+            self.clear_memos()
+
+        # #     # self.memo_list_frame.config(height=0)
+        # #     self.memo_content.grid(pady=1)
+        #     # 强制更新布局
+        #     self.memo_list_frame.grid_forget()  # 移除父容器的布局
+        #     self.memo_list_frame.grid()         # 重新布局
+        #     self.memo_content.grid()         # 重新布局
+            
+        #     self.memo_content.grid(row=1, column=0, pady=1, padx=1)
+
+        # print(self.memo_content.config(),results == [])
+        self.root.after(1000,self.load_memos)
+
+    def clear_memos(self):
+        """清空历史记录"""
+        # print(self.memo_list_frame.config())
+        # for widget in self.memo_list_frame.winfo_children():
+        #     widget.destroy()
+    # 如果 memo_list_frame 已经存在，先销毁它
+        if hasattr(self, 'memo_list_frame') and self.memo_list_frame:
+            self.memo_list_frame.destroy()
+
+        self.memo_list_frame = tk.Frame(self.root)#, bg="#f0f0f0"
+        
+        self.memo_list_frame.grid(row=0, column=0, pady=1, padx=3)
+        # 输入框
+        # self.memo_content.grid(row=1, column=0, pady=1, padx=1)
+
+        #         # 手动调整父容器的位置
+        # self.memo_list_frame.update_idletasks()  # 确保父容器的布局更新
+        # self.memo_content.grid_propagate(False)
+        # self.memo_content.grid_propagate(True)
+            # widget.grid_remove()  # 使用 grid_remove() 移除组件
+        # 禁止自动调整大小，或者手动设置高度为零
+        # self.memo_list_frame.grid_propagate(False)
+        # self.memo_list_frame.config(height=0)
+        # 强制更新布局
+        # self.memo_list_frame.grid_forget()  # 移除父容器的布局
+        # self.memo_list_frame.grid()         # 重新布局
+        
     def display_memo(self, title, timestamp_str, memo):
         """在主界面显示历史备忘录"""
         memo_label = tk.Label(self.memo_list_frame, text=f"{timestamp_str} - {title}", font=("Arial", 12), bg="#fffae6", relief="solid", anchor="w", padx=1)
@@ -226,11 +297,6 @@ class MemoApp:
 
         listbox.bind("<Double-1>", on_select)
 
-    def clear_memos(self):
-        """清空历史记录"""
-        for widget in self.memo_list_frame.winfo_children():
-            widget.destroy()
-
 
     def show_all_memos(self):
         """展示所有备忘录数据"""
@@ -288,6 +354,10 @@ class MemoApp:
         search_button.pack(pady=5)
 
         search_entry.focus_set()  # 聚焦到搜索框
+
+    def on_close(self):
+        # 在这里可以添加一些自定义的关闭行为，例如确认框
+        self.root.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()
