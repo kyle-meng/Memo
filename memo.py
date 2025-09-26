@@ -2,12 +2,12 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog
 import sqlite3
 import time
-import threading
 import re
 import os
 from cryptography.fernet import Fernet
 
 from functools import partial
+
 KEY_FILE = "mome.key"
 
 # 生成密钥（保存到本地，只需要生成一次）
@@ -33,18 +33,6 @@ def decrypt_text(token: str, fernet: Fernet) -> str:
     return fernet.decrypt(token.encode("utf-8")).decode("utf-8")
 
 
-# 待加密
-# plaintext = "sasasasasa"
-
-# # 加密
-# encrypted = encrypt_text(plaintext,cipher)
-# print("加密后：", encrypted)
-
-# # 解密
-# decrypted = decrypt_text(encrypted,cipher)
-# print("解密后：", decrypted)
-
-
 
 # 后续控件放置在这个标签上面
 
@@ -52,8 +40,8 @@ class MemoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Memo")
-        self.root.geometry("450x450+850+0")
-        self.root.configure(bg="#fff553")  # 背景颜色
+        self.root.geometry("310x450+950+0")
+        self.root.configure(bg="#e3e01e")  # 背景颜色
         self.root.overrideredirect(True)
         self.font = 'Leelawadee UI'
         # self.root.iconify()  # 最小化窗口，保留在任务栏中
@@ -67,7 +55,7 @@ class MemoApp:
         self.memo_list_frame = tk.Frame(self.root)#, bg="#f0f0f0"
         self.memo_list_frame.grid(row=0, column=0, pady=0, padx=0)
         # 输入框
-        self.memo_content = tk.Text(self.root, height=30, width=40, font=(self.font, 18),bg="#fff553")
+        self.memo_content = tk.Text(self.root, height=30, width=25, font=(self.font, 18),bg="#e3e01e")
         self.memo_content.grid(row=1, column=0, pady=0, padx=0)
         #保存按钮
         # self.save_button = tk.Button(self.root, text="保存", command=self.save_memo, font=(self.font, 12), bg="#4CAF50", fg="white", relief="solid")
@@ -88,6 +76,9 @@ class MemoApp:
         self.root.bind("<Control-l>", lambda event: self.show_all_memos())
         self.root.bind("<Control-b>", lambda event: self.on_close())
         self.root.bind("<Control-r>", lambda event: self.insert_text_angle_brackets())
+        self.root.bind("<Alt-m>", lambda event: self.minimize())  # Alt + M 最小化
+        self.root.bind("<Alt-x>", lambda event: self.maximize())  # Alt + X 最大化
+
 
         # 当窗口获得焦点时恢复透明度
         self.root.bind("<FocusIn>", self.on_focus_in)
@@ -118,6 +109,15 @@ class MemoApp:
         conn.commit()
         conn.close()
 
+    def minimize(self, event=None):
+        """最小化窗口"""
+        self.root.withdraw()
+
+    def maximize(self, event=None):
+        """恢复窗口至原始大小"""
+        if hasattr(self, 'saved_geometry'):
+            self.root.geometry(self.saved_geometry)  # 恢复最小化前的窗口大小
+        self.root.deiconify()  # 恢复窗口显示
 
     def insert_text_angle_brackets(self, event=None):
         """插入字符 '<>'，并将光标放在 <> 中间"""
@@ -237,7 +237,9 @@ class MemoApp:
         
         # 创建折叠后的备忘录显示
         memo_label = tk.Label(self.memo_list_frame, text=f"{simplified_content} - {timestamp_str}", font=(self.font, 12), bg="#fffae6", relief="solid", anchor="w", padx=10)
-        memo_label.grid(sticky="w", padx=5, pady=5)
+        # memo_label.grid(sticky="w", padx=5, pady=5)
+        memo_label.pack(fill=tk.X)  # 填充水平方向
+
 
         # 保存备忘录
         self.memos.append({"title": simplified_content, "content": content, "timestamp": timestamp_str})
@@ -519,7 +521,24 @@ class MemoApp:
     def on_focus_out(self, event):
         self.root.attributes('-alpha', 0.1)  # 设置窗口几乎透明
 
-if __name__ == "__main__":
+import threading
+from pystray import Icon, Menu, MenuItem
+from PIL import Image
+
+def tray():
     root = tk.Tk()
     app = MemoApp(root)
+    
+    image = Image.open("Memo\\static\\favicon.png")
+    menu = Menu(
+        MenuItem("最小化", app.minimize),
+        MenuItem("最大化", app.maximize),
+        MenuItem("退出服务", app.on_close)
+    )
+    icon = Icon("Memo", image, "备忘录", menu)
+    threading.Thread(target=icon.run, daemon=True).start()
     root.mainloop()
+
+if __name__ == "__main__":
+    tray()
+
