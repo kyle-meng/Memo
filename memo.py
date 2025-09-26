@@ -286,7 +286,8 @@ class MemoApp:
             # self.schedule_fold(title, content, timestamp)  # 安排折叠任务
 
         else:
-            messagebox.showwarning("警告", "备忘录内容不能为空！")
+            # messagebox.showwarning("警告", "备忘录内容不能为空！")
+            print("警告", "备忘录内容不能为空！")
 
 
     def schedule_fold(self, title, content, timestamp):
@@ -403,13 +404,17 @@ class MemoApp:
         :param event: 事件对象
         :param index: 区分点击区域的索引
         """
-        print(f"点击了第 {index + 1} 段加密内容")
+        # print(f"点击了第 {index + 1} 段加密内容")
         matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', test_original)
         # 输出匹配结果
         # print(matches)
-        decrypted = decrypt_text(matches[index],self.cipher)
-        # print("解密后：", decrypted)
-        self.show_dec(decrypted)
+        try:
+            decrypted = decrypt_text(matches[index],self.cipher)
+            # print("解密后：", decrypted)
+            self.show_dec(decrypted)
+        except:
+            messagebox.showwarning("警告", "解密失败，密钥错误！")
+
 
     def make_clickable_text(self,text_widget, text, test_original,target_string="<ENC>***********<DEC>"):
         """
