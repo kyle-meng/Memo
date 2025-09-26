@@ -4,27 +4,24 @@ import sqlite3
 import time
 import threading
 import re
-
+import os
 from cryptography.fernet import Fernet
 
+
+KEY_FILE = "mome.key"
+
 # 生成密钥（保存到本地，只需要生成一次）
-# key = Fernet.generate_key()
-# with open("key.key", "wb") as f:
-#     f.write(key)
+if not os.path.exists(KEY_FILE):
+    key = Fernet.generate_key()
+    with open(KEY_FILE, "wb") as f:
+        f.write(key)
 
-# # 加载密钥
-# with open("key.key", "rb") as f:
-#     key = f.read()
-
-KEY_FILE = "key.key"
 # -------------------------------
 # 读取密钥
 # -------------------------------
 def load_key():
     with open(KEY_FILE, "rb") as f:
         return f.read()
-    
-
 
 # -------------------------------
 # 3) 加解密
@@ -36,8 +33,8 @@ def decrypt_text(token: str, fernet: Fernet) -> str:
     return fernet.decrypt(token.encode("utf-8")).decode("utf-8")
 
 
-# 待加密的账号密码
-# plaintext = "账号: user@example.com\n密码: mypassword123"
+# 待加密
+# plaintext = "sasasasasa"
 
 # # 加密
 # encrypted = encrypt_text(plaintext,cipher)
@@ -98,7 +95,11 @@ class MemoApp:
         self.root.bind("<Control-b>", lambda event: self.on_close())
         self.root.bind("<Control-r>", lambda event: self.insert_text_angle_brackets())
 
-
+        # 当窗口获得焦点时恢复透明度
+        self.root.bind("<FocusIn>", self.on_focus_in)
+        
+        # 当窗口失去焦点时设置为几乎透明
+        self.root.bind("<FocusOut>", self.on_focus_out)
 
         # 定时折叠时间（分钟）
         self.fold_time_minutes = 2
@@ -487,6 +488,14 @@ class MemoApp:
     def on_close(self):
         # 在这里可以添加一些自定义的关闭行为，例如确认框
         self.root.destroy()
+
+
+
+    def on_focus_in(self, event):
+        self.root.attributes('-alpha', 0.8)  # 恢复正常透明度
+
+    def on_focus_out(self, event):
+        self.root.attributes('-alpha', 0.1)  # 设置窗口几乎透明
 
 if __name__ == "__main__":
     root = tk.Tk()
