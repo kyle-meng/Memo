@@ -7,7 +7,7 @@ import re
 import os
 from cryptography.fernet import Fernet
 
-
+from functools import partial
 KEY_FILE = "mome.key"
 
 # 生成密钥（保存到本地，只需要生成一次）
@@ -55,7 +55,7 @@ class MemoApp:
         self.root.geometry("450x450+850+0")
         self.root.configure(bg="#fff553")  # 背景颜色
         self.root.overrideredirect(True)
-
+        self.font = 'Leelawadee UI'
         # self.root.iconify()  # 最小化窗口，保留在任务栏中
 
         self.root.attributes('-alpha', 0.8)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
@@ -73,19 +73,19 @@ class MemoApp:
         # self.memo_list_frame.call("wm", "attributes", ".", "-alpha", "0.6") # Window Opacity 0.0-1.0
 
         # 输入框
-        self.memo_content = tk.Text(self.root, height=30, width=40, font=("Arial", 18),bg="#fff553")
+        self.memo_content = tk.Text(self.root, height=30, width=40, font=(self.font, 18),bg="#fff553")
         self.memo_content.grid(row=1, column=0, pady=0, padx=0)
 
-        # self.save_button = tk.Button(self.root, text="保存", command=self.save_memo, font=("Arial", 12), bg="#4CAF50", fg="white", relief="solid")
+        # self.save_button = tk.Button(self.root, text="保存", command=self.save_memo, font=(self.font, 12), bg="#4CAF50", fg="white", relief="solid")
         # self.save_button.grid(row=2, column=0, pady=10, padx=10)
 
         # 搜索框和按钮
-        # self.search_label = tk.Label(self.root, text="搜索备忘录", font=("Arial", 12), bg="#f0f0f0")
+        # self.search_label = tk.Label(self.root, text="搜索备忘录", font=(self.font, 12), bg="#f0f0f0")
         # self.search_label.grid(row=3, column=0, pady=5)
-        # self.search_entry = tk.Entry(self.root, width=40, font=("Arial", 12))
+        # self.search_entry = tk.Entry(self.root, width=40, font=(self.font, 12))
         # self.search_entry.grid(row=4, column=0, pady=5, padx=10)
 
-        # self.search_button = tk.Button(self.root, text="搜索", command=self.search_memo, font=("Arial", 12), bg="#2196F3", fg="white", relief="solid")
+        # self.search_button = tk.Button(self.root, text="搜索", command=self.search_memo, font=(self.font, 12), bg="#2196F3", fg="white", relief="solid")
         # self.search_button.grid(row=5, column=0, pady=10, padx=10)
 
         # 添加快捷键支持
@@ -250,7 +250,7 @@ class MemoApp:
         timestamp_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))
         
         # 创建折叠后的备忘录显示
-        memo_label = tk.Label(self.memo_list_frame, text=f"{simplified_content} - {timestamp_str}", font=("Arial", 12), bg="#fffae6", relief="solid", anchor="w", padx=10)
+        memo_label = tk.Label(self.memo_list_frame, text=f"{simplified_content} - {timestamp_str}", font=(self.font, 12), bg="#fffae6", relief="solid", anchor="w", padx=10)
         memo_label.grid(sticky="w", padx=5, pady=5)
 
         # 保存备忘录
@@ -347,7 +347,7 @@ class MemoApp:
         
     def display_memo(self, title, timestamp_str, memo):
         """在主界面显示历史备忘录"""
-        memo_label = tk.Label(self.memo_list_frame, text=f"{timestamp_str} - {title}", font=("Arial", 12), bg="#fffae6", relief="solid", anchor="w", padx=1)
+        memo_label = tk.Label(self.memo_list_frame, text=f"{timestamp_str} - {title}", font=(self.font, 12), bg="#fffae6", relief="solid", anchor="w", padx=1)
         memo_label.grid(sticky="w", padx=1, pady=1)
 
         # 点击折叠的备忘录展示完整内容
@@ -356,6 +356,67 @@ class MemoApp:
 
         memo_label.bind("<Button-1>", on_memo_click)
 
+
+    def show_dec(self,text):
+        """弹出解码框"""
+        show_dec = tk.Toplevel(self.root)
+        show_dec.title("解密")
+        show_dec.geometry("400x50")
+        text_widget = tk.Text(show_dec, width=50, height=20, font=(self.font, 12))
+        text_widget.insert(tk.END, f"解密：\n{text}")
+        text_widget.pack(padx=1, pady=1)
+        text_widget.config(state=tk.DISABLED)
+
+
+    def on_click(self,event,index,test_original):
+        """
+        处理点击事件，区分点击的是哪一部分 `<ENC>***********<DEC>`
+        :param event: 事件对象
+        :param index: 区分点击区域的索引
+        """
+        print(f"点击了第 {index + 1} 段 <ENC>***********<DEC>")
+        matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', test_original)
+        # 输出匹配结果
+        # print(matches)
+        decrypted = decrypt_text(matches[index],self.cipher)
+        # print("解密后：", decrypted)
+        self.show_dec(decrypted)
+
+    def make_clickable_text(self,text_widget, text, test_original,target_string="<ENC>***********<DEC>"):
+        """
+        在指定的 Text 小部件中，将所有的 target_string 标记为可点击的文本。
+        
+        :param text_widget: 需要添加点击功能的 Text 小部件
+        :param text: 需要插入的文本
+        :param target_string: 需要添加点击事件的目标字符串（默认为 <ENC>***********<DEC>）
+        """
+        # 在 Text 小部件中插入文本
+        text_widget.insert(tk.END, text)
+
+        start_pos = "1.0"  # 从文本的开始位置开始搜索
+        index = 0  # 用于标记每个目标字符串的位置（如第1段，第2段等）
+
+        # 利用 search 的迭代方式，避免使用 while True
+        # while True:
+        for _ in range(text.count(target_string)):
+            start_pos = text_widget.search(target_string, start_pos, stopindex=tk.END)
+            if not start_pos:  # 如果没有找到更多的 target_string
+                break
+            end_pos = text_widget.index(f"{start_pos}+{len(target_string)}c")
+            
+            # 创建标签，使得 target_string 部分可以点击
+            text_widget.tag_add(f"clickable_{index}", start_pos, end_pos)
+
+            # 配置标签属性（例如：显示为蓝色，带下划线）
+            text_widget.tag_config(f"clickable_{index}", foreground="blue", underline=True)
+
+            # 使用 partial 将索引传递给 on_click 函数
+            text_widget.tag_bind(f"clickable_{index}", "<Button-1>", partial(self.on_click, index=index,test_original=test_original))
+
+            # 更新start_pos，继续查找下一个 target_string
+            start_pos = end_pos
+            index += 1  # 增加索引，标记下一个 <***********> 的位置
+            
     def show_full_memo(self, memo):
         """显示完整的备忘录内容"""
         #展示前替换加密字符
@@ -367,11 +428,12 @@ class MemoApp:
         full_memo_window.geometry("450x300")
 
         timestamp_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(memo[0]))
-        text_widget = tk.Text(full_memo_window, width=50, height=20, font=("Arial", 12))
+        text_widget = tk.Text(full_memo_window, width=50, height=20, font=(self.font, 12))
         text_widget.insert(tk.END, f"标题：{memo[1]}\n保存时间：{timestamp_str}\n\n内容：\n{memo_show}")
         text_widget.pack(padx=1, pady=1)
         text_widget.config(state=tk.DISABLED)
 
+        self.make_clickable_text(text_widget, memo_show,memo[2])
     # def search_memo(self):
     #     """根据搜索框的内容查找备忘录"""
     #     keyword = self.search_entry.get().strip()
@@ -411,7 +473,7 @@ class MemoApp:
         search_window.title("搜索结果")
         search_window.geometry("450x300")
 
-        listbox = tk.Listbox(search_window, width=50, height=15, font=("Arial", 12))
+        listbox = tk.Listbox(search_window, width=50, height=15, font=(self.font, 12))
         listbox.pack(padx=5, pady=5)
 
         for memo in results:
@@ -440,7 +502,7 @@ class MemoApp:
         all_memos_window.title("所有备忘录")
         all_memos_window.geometry("450x300")
 
-        listbox = tk.Listbox(all_memos_window, width=50, height=15, font=("Arial", 12))
+        listbox = tk.Listbox(all_memos_window, width=50, height=15, font=(self.font, 12))
         listbox.pack(padx=5, pady=5)
 
         for memo in results:
@@ -465,10 +527,10 @@ class MemoApp:
         search_popup.title("搜索备忘录")
         search_popup.geometry("400x70")
 
-        # search_label = tk.Label(search_popup, text="请输入搜索内容：", font=("Arial", 12))
+        # search_label = tk.Label(search_popup, text="请输入搜索内容：", font=(self.font, 12))
         # search_label.pack(padx=1,pady=1)
 
-        search_entry = tk.Entry(search_popup, width=40, font=("Arial", 12))
+        search_entry = tk.Entry(search_popup, width=40, font=(self.font, 12))
         search_entry.pack(padx=5,pady=1)
 
         def on_search(event=None):
@@ -480,7 +542,7 @@ class MemoApp:
 
         search_entry.bind("<Return>", on_search)
 
-        search_button = tk.Button(search_popup, text="搜索", command=on_search, font=("Arial", 12), bg="#868E94", fg="white")
+        search_button = tk.Button(search_popup, text="搜索", command=on_search, font=(self.font, 12), bg="#868E94", fg="white")
         search_button.pack(pady=5)
 
         search_entry.focus_set()  # 聚焦到搜索框
