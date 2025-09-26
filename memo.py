@@ -81,7 +81,7 @@ class MemoApp:
         self.root.geometry("300x480+950+0")
         self.root.configure(bg=self.bg)  # 背景颜色
         self.root.overrideredirect(True)
-        
+        self.load_time = 0.1 #mins
         # self.root.iconify()  # 最小化窗口，保留在任务栏中
         # root.attributes('-transparentcolor', '#f5f5f5')  # 设置透明背景颜色
         # root.attributes('-transparentcolor', '#ECF0F1')  # 设置透明背景颜色
@@ -343,7 +343,7 @@ class MemoApp:
         # 获取当前时间的时间戳
         current_time = time.time()
         # 只加载近10分钟内的记录
-        time_threshold = current_time - (0.1 * 60)  # 10分钟
+        time_threshold = current_time - (self.load_time * 60)  # 10分钟
 
         conn = sqlite3.connect('memo.db')
         c = conn.cursor()
