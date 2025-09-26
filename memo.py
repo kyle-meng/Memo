@@ -5,7 +5,6 @@ import time
 import re
 import os
 from cryptography.fernet import Fernet
-
 from functools import partial
 
 KEY_FILE = "mome.key"
@@ -45,6 +44,32 @@ def round_rect(x1, y1, x2, y2, r, canvas,bg = "#b4b2a4"):
     canvas.create_rectangle(x1 + r, y1, x2 - r, y2, outline=bg, fill=bg)
     canvas.create_rectangle(x1, y1 + r, x2, y2 - r, outline=bg, fill=bg)
 
+
+class PlaceholderText:
+    def __init__(self, text_widget, placeholder):
+        self.text_widget = text_widget
+        self.placeholder = placeholder
+        self.text_widget.insert("1.0", self.placeholder)
+        self.text_widget.config(fg="gray")  # 设置提示文本颜色为灰色
+
+        # 绑定焦点事件
+        self.text_widget.bind("<FocusIn>", self.on_focus_in)
+        self.text_widget.bind("<FocusOut>", self.on_focus_out)
+
+    def on_focus_in(self, event):
+        """当文本框获得焦点时，如果是占位符，清空文本框"""
+        current_text = self.text_widget.get("1.0", "end-1c")  # 获取文本框的内容
+        if current_text == self.placeholder:
+            self.text_widget.delete("1.0", "end")  # 删除占位符文本
+            self.text_widget.config(fg="black")  # 设置文本颜色为黑色
+
+    def on_focus_out(self, event):
+        """当文本框失去焦点时，如果文本框为空，则重新显示占位符"""
+        current_text = self.text_widget.get("1.0", "end-1c")
+        if not current_text:
+            self.text_widget.insert("1.0", self.placeholder)
+            self.text_widget.config(fg="gray")
+
 # 后续控件放置在这个标签上面
 
 class MemoApp:
@@ -75,14 +100,23 @@ class MemoApp:
 
 
         # 历史备忘录显示区域
-        self.memo_list_frame = tk.Frame(self.root)#, bg="#f0f0f0"
+        self.memo_list_frame = tk.Frame(self.root,bg=self.bg)#, bg="#f0f0f0"
         self.memo_list_frame.grid(row=0, column=0, pady=0, padx=0)
 
 
         # # 输入框
-        self.memo_content = tk.Text(self.root, height=30, width=33, font=(self.font, 12),bg="#fff553")
+        self.memo_content = tk.Text(self.root, height=30, width=33, font=(self.font, 12),bg=self.bg)
         self.memo_content.grid(row=1, column=0, pady=0, padx=0)
+        # 设置占位符文本
 
+        placeholder = """请输入您的内容...
+        Control + S         保存
+        Control + F         搜索
+        Control + L         列出所有
+        Control + B         退出
+        Control + R         加密
+        Alt + M               最小化"""
+        placeholder_text = PlaceholderText(self.memo_content, placeholder)
         # 输入框
         # self.memo_content = tk.Text(self.root, height=20, width=28, font=(self.font, 12),bg="#c2b351")
         # self.memo_content.place(x=28,y=30)
