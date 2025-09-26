@@ -33,6 +33,17 @@ def decrypt_text(token: str, fernet: Fernet) -> str:
     return fernet.decrypt(token.encode("utf-8")).decode("utf-8")
 
 
+# 圆角矩形函数
+def round_rect(x1, y1, x2, y2, r, canvas,bg = "#b4b2a4"):
+    # 画四个圆角
+    canvas.create_oval(x1, y1, x1 + 2*r, y1 + 2*r, outline=bg, fill=bg)
+    canvas.create_oval(x2 - 2*r, y1, x2, y1 + 2*r, outline=bg, fill=bg)
+    canvas.create_oval(x1, y2 - 2*r, x1 + 2*r, y2, outline=bg, fill=bg)
+    canvas.create_oval(x2 - 2*r, y2 - 2*r, x2, y2, outline=bg, fill=bg)
+
+    # # 画矩形部分
+    canvas.create_rectangle(x1 + r, y1, x2 - r, y2, outline=bg, fill=bg)
+    canvas.create_rectangle(x1, y1 + r, x2, y2 - r, outline=bg, fill=bg)
 
 # 后续控件放置在这个标签上面
 
@@ -40,23 +51,41 @@ class MemoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Memo")
-        self.root.geometry("310x450+950+0")
-        self.root.configure(bg="#e3e01e")  # 背景颜色
-        self.root.overrideredirect(True)
         self.font = 'Leelawadee UI'
+        self.bg = "#ECF0F1"
+        self.root.geometry("300x480+950+0")
+        self.root.configure(bg=self.bg)  # 背景颜色
+        self.root.overrideredirect(True)
+        
         # self.root.iconify()  # 最小化窗口，保留在任务栏中
+        # root.attributes('-transparentcolor', '#f5f5f5')  # 设置透明背景颜色
+        # root.attributes('-transparentcolor', '#ECF0F1')  # 设置透明背景颜色
 
-        self.root.attributes('-alpha', 0.8)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
-        # self.root.wm_attributes('-transparentcolor', '#f2f1f1')  # 将白色设为透明'#fc0000'
+        # self.root.attributes('-alpha', 1)  # 设置窗口透明度（0.0 到 1.0，0.0 为完全透明）
+        # self.root.wm_attributes('-transparentcolor', '#ECF0F1')  # 将白色设为透明'#fc0000'
         # self.root.call("wm", "attributes", ".", "-alpha", "0.6") # Window Opacity 0.0-1.0
+
+        # # 创建Canvas，用来绘制圆角矩形
+        # canvas = tk.Canvas(self.root, width=300, height=470)
+        # canvas.grid()
+        # # 设置圆角的半径
+        # round_radius = 20
+        # # 绘制圆角矩形
+        # round_rect(10, 10, 300, 470, round_radius, canvas)
 
 
         # 历史备忘录显示区域
         self.memo_list_frame = tk.Frame(self.root)#, bg="#f0f0f0"
         self.memo_list_frame.grid(row=0, column=0, pady=0, padx=0)
-        # 输入框
-        self.memo_content = tk.Text(self.root, height=30, width=25, font=(self.font, 18),bg="#e3e01e")
+
+
+        # # 输入框
+        self.memo_content = tk.Text(self.root, height=30, width=33, font=(self.font, 12),bg="#fff553")
         self.memo_content.grid(row=1, column=0, pady=0, padx=0)
+
+        # 输入框
+        # self.memo_content = tk.Text(self.root, height=20, width=28, font=(self.font, 12),bg="#c2b351")
+        # self.memo_content.place(x=28,y=30)
         #保存按钮
         # self.save_button = tk.Button(self.root, text="保存", command=self.save_memo, font=(self.font, 12), bg="#4CAF50", fg="white", relief="solid")
         # self.save_button.grid(row=2, column=0, pady=10, padx=10)
@@ -77,7 +106,7 @@ class MemoApp:
         self.root.bind("<Control-b>", lambda event: self.on_close())
         self.root.bind("<Control-r>", lambda event: self.insert_text_angle_brackets())
         self.root.bind("<Alt-m>", lambda event: self.minimize())  # Alt + M 最小化
-        self.root.bind("<Alt-x>", lambda event: self.maximize())  # Alt + X 最大化
+        # self.root.bind("<Alt-x>", lambda event: self.maximize())  # Alt + X 最大化
 
 
         # 当窗口获得焦点时恢复透明度
@@ -99,6 +128,8 @@ class MemoApp:
         #加密
         self.key = load_key()
         self.cipher = Fernet(self.key)
+
+
 
     def init_db(self):
         """初始化数据库"""
@@ -194,7 +225,7 @@ class MemoApp:
 
         if content:
             timestamp = time.time()
-            title = content[:10]  # 简略标题
+            title = content[:8]  # 简略标题
 
             # 检查数据库是否已有相同内容，若有则更新时间戳
             conn = sqlite3.connect('memo.db')
@@ -309,9 +340,11 @@ class MemoApp:
         
     def display_memo(self, title, timestamp_str, memo):
         """在主界面显示历史备忘录"""
-        memo_label = tk.Label(self.memo_list_frame, text=f"{timestamp_str} - {title}", font=(self.font, 12), bg="#fffae6", relief="solid", anchor="w", padx=1)
-        memo_label.grid(sticky="w", padx=1, pady=1)
-
+        memo_label = tk.Label(self.memo_list_frame, text=f"{timestamp_str} - {title}", font=(self.font, 12), bg="#fcea52", relief="solid", anchor="w")#, padx=1
+        memo_label.grid(sticky="w", padx=0, pady=1)
+        # memo_label.grid(row=0, column=0, columnspan=2, sticky="nsew")  # 使标签跨越两列并居中
+        # memo_label.pack(fill=tk.X)  # 填充水平方向
+        # memo_label.pack(expand=True)  # 设置expand=True会使标签垂直和水平方向上都居中
         # 点击折叠的备忘录展示完整内容
         def on_memo_click(event, memo=memo):
             self.show_full_memo(memo)
@@ -516,7 +549,7 @@ class MemoApp:
 
 
     def on_focus_in(self, event):
-        self.root.attributes('-alpha', 0.8)  # 恢复正常透明度
+        self.root.attributes('-alpha', 1.0)  # 恢复正常透明度
 
     def on_focus_out(self, event):
         self.root.attributes('-alpha', 0.1)  # 设置窗口几乎透明
