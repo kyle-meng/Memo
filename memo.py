@@ -6,8 +6,17 @@ import re
 import os
 from cryptography.fernet import Fernet
 from functools import partial
+from to_blockchain import set_user_info
+from dotenv import load_dotenv
 
-KEY_FILE = "mome.key"
+load_dotenv()  # take environment variables
+FOLD_TIME = float(os.getenv("FOLD_TIME"))
+KEY_FILE = os.getenv("KEY_FILE")
+STRING_LENGTH = os.getenv("STRING_LENGTH")
+TO_BLOCKCHAIN = os.getenv("TO_BLOCKCHAIN") == "True"
+
+
+# KEY_FILE = "mome.key"
 
 # 生成密钥（保存到本地，只需要生成一次）
 if not os.path.exists(KEY_FILE):
@@ -81,7 +90,8 @@ class MemoApp:
         self.root.geometry("300x480+950+0")
         self.root.configure(bg=self.bg)  # 背景颜色
         self.root.overrideredirect(True)
-        self.load_time = 0.1 #mins
+        
+
         # self.root.iconify()  # 最小化窗口，保留在任务栏中
         # root.attributes('-transparentcolor', '#f5f5f5')  # 设置透明背景颜色
         # root.attributes('-transparentcolor', '#ECF0F1')  # 设置透明背景颜色
@@ -150,7 +160,7 @@ class MemoApp:
         self.root.bind("<FocusOut>", self.on_focus_out)
 
         # 定时折叠时间（分钟）
-        self.fold_time_minutes = 2
+        self.fold_time_minutes = FOLD_TIME
         self.new_memo_interval = 60 * 60  # 每小时生成新备忘录（默认1小时）
 
         self.init_db()  # 初始化数据库
@@ -256,7 +266,6 @@ class MemoApp:
         # print(content)
         content = self.re_and_enc(content)
         # print(content)
-
         if content:
             timestamp = time.time()
             title = content[:8]  # 简略标题
@@ -284,6 +293,12 @@ class MemoApp:
             self.memo_content.delete("1.0", tk.END)
             # messagebox.showinfo("提示", "备忘录保存成功！")
             # self.schedule_fold(title, content, timestamp)  # 安排折叠任务
+            # set_user_info(title,content)
+            if len(content) < int(STRING_LENGTH) and TO_BLOCKCHAIN:#字符串小于1200才上链
+                threading.Thread(target=set_user_info,args=(title,content,), daemon=True).start()
+            else:
+                # print("字符串太长，不进行上链操作")
+                messagebox.showinfo("提示","字符串太长，已存入本地数据库，不进行上链操作！")
 
         else:
             # messagebox.showwarning("警告", "备忘录内容不能为空！")
@@ -344,7 +359,7 @@ class MemoApp:
         # 获取当前时间的时间戳
         current_time = time.time()
         # 只加载近10分钟内的记录
-        time_threshold = current_time - (self.load_time * 60)  # 10分钟
+        time_threshold = current_time - (self.fold_time_minutes * 60)  # 10分钟
 
         conn = sqlite3.connect('memo.db')
         c = conn.cursor()
@@ -599,6 +614,8 @@ from PIL import Image
 
 def tray():
     root = tk.Tk()
+    root.iconphoto(True, tk.PhotoImage(file="Memo\\static\\favicon.png"))
+    # root.set_ui()
     app = MemoApp(root)
     
     image = Image.open("Memo\\static\\favicon.png")

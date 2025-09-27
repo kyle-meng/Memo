@@ -1,0 +1,11 @@
+#Memo
+FOLD_TIME = 0.1             # MINS TO FOLD
+KEY_FILE = mome.key         # KEY FILE PATH
+#blockchain                 # If you don't need it, you can delete the following part
+TO_BLOCKCHAIN = True        # Whether to upload the blockchain
+STRING_LENGTH = 1200        # Limit the length of the string on the chain
+PROVIDER_URL = http://localhost:8545
+#account
+CONTRACT_ADDRESS = 0xxxxxxxxxxxxxxxxxxxxxxx
+PRIVATE_KEY = 0xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ACCOUNT = 0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
