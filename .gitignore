@@ -24,3 +24,5 @@ TestResults.xml
 *.env
 *.key
 *.db
+*.ipynb
+*.pem
