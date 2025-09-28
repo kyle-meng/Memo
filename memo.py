@@ -563,22 +563,6 @@ class MemoApp:
         text_widget.config(state=tk.DISABLED)
 
         self.make_clickable_text(text_widget, memo_show,memo[2])
-    # def search_memo(self):
-    #     """根据搜索框的内容查找备忘录"""
-    #     keyword = self.search_entry.get().strip()
-    #     if keyword:
-    #         conn = sqlite3.connect('memo.db')
-    #         c = conn.cursor()
-    #         c.execute("SELECT * FROM memos WHERE title LIKE ?", ('%' + keyword + '%',))
-    #         results = c.fetchall()
-    #         conn.close()
-
-    #         if results:
-    #             self.show_search_results(results)
-    #         else:
-    #             messagebox.showinfo("搜索结果", "未找到匹配的备忘录。")
-    #     else:
-    #         messagebox.showwarning("警告", "请输入搜索关键词！")
 
     def search_memo(self, keyword):
         """根据输入框的内容进行全文搜索备忘录"""
@@ -754,12 +738,14 @@ from pystray import Icon, Menu, MenuItem
 from PIL import Image
 
 def tray():
+    file_path = os.path.join(os.getcwd(),'static\\favicon.png')
+
     root = tk.Tk()
-    root.iconphoto(True, tk.PhotoImage(file="D:\\Backup\\备份\\备忘录\\Memo\\static\\favicon.png"))
-    # root.set_ui()
+    root.iconphoto(True, tk.PhotoImage(file=file_path))
+
     app = MemoApp(root)
     
-    image = Image.open("D:\\Backup\\备份\\备忘录\\Memo\\static\\favicon.png")
+    image = Image.open(file_path)
     menu = Menu(
         MenuItem("最小化", app.minimize),
         MenuItem("最大化", app.maximize),
