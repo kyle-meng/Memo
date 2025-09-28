@@ -4,26 +4,30 @@ import sqlite3
 import time
 import re
 import os
+import getpass
+import ast
+
 from cryptography.fernet import Fernet
 from functools import partial
-import queue
+from rsa_dec import load_public,load_private,rsa_encrypt,rsa_decrypt,make_key,key_maker
 from to_blockchain import set_user_memo
 from dotenv import load_dotenv
 
 load_dotenv()  # take environment variables
 FOLD_TIME = float(os.getenv("FOLD_TIME"))
 KEY_FILE = os.getenv("KEY_FILE")
+ENC_METHOD = os.getenv("ENC_METHOD")
 STRING_LENGTH = os.getenv("STRING_LENGTH")
 TO_BLOCKCHAIN = os.getenv("TO_BLOCKCHAIN") == "True"
 
 
 # KEY_FILE = "mome.key"
-
-# 生成密钥（保存到本地，只需要生成一次）
-if not os.path.exists(KEY_FILE):
-    key = Fernet.generate_key()
-    with open(KEY_FILE, "wb") as f:
-        f.write(key)
+if not ENC_METHOD == 'RSA':
+    # 生成密钥（保存到本地，只需要生成一次）
+    if not os.path.exists(KEY_FILE):
+        key = Fernet.generate_key()
+        with open(KEY_FILE, "wb") as f:
+            f.write(key)
 
 # -------------------------------
 # 读取密钥
@@ -41,6 +45,38 @@ def encrypt_text(plaintext: str, fernet: Fernet) -> str:
 def decrypt_text(token: str, fernet: Fernet) -> str:
     return fernet.decrypt(token.encode("utf-8")).decode("utf-8")
 
+
+def enc(plaintext):
+    if ENC_METHOD == 'RSA':
+        public_key = load_public()
+        ciphertext = rsa_encrypt(plaintext.encode(),public_key)
+        return ciphertext
+    else:
+        key = load_key()
+        cipher = Fernet(key)
+        ciphertext = encrypt_text(plaintext,cipher)
+        return ciphertext
+
+def dec(ciphertext,password = None):
+    if ENC_METHOD == 'RSA':
+        if password == None:
+            # print('无密码load')
+            private_key = load_private()
+        else:
+            # password = getpass.getpass("输入私钥密码：").strip()
+            private_key = load_private(password=password.encode())
+
+        # 使用 ast.literal_eval 将字符串转换为字节串
+        ciphertext = ast.literal_eval(ciphertext)
+        # 现在 ciphertext 就是一个字节串类型的对象，可以传给加密解密函数了
+        # print(type(ciphertext))  # <class 'bytes'>
+        decrypted = rsa_decrypt(ciphertext,private_key)
+        return decrypted
+    else:
+        key = load_key()
+        cipher = Fernet(key)
+        decrypted = decrypt_text(ciphertext,cipher)
+        return decrypted
 
 # 圆角矩形函数
 def round_rect(x1, y1, x2, y2, r, canvas,bg = "#b4b2a4"):
@@ -161,6 +197,9 @@ class MemoApp:
         self.root.bind("<Control-b>", lambda event: self.on_close())
         self.root.bind("<Control-r>", lambda event: self.insert_text_angle_brackets())
         self.root.bind("<Alt-m>", lambda event: self.minimize())  # Alt + M 最小化
+        # self.root.bind("<Alt-n>", lambda event: self.get_key())  # Alt + M 最小化
+
+        
         # self.root.bind("<Alt-x>", lambda event: self.maximize())  # Alt + X 最大化
 
 
@@ -181,9 +220,9 @@ class MemoApp:
         # 自动保存用户输入
         # self.memo_content.bind("<KeyRelease>", self.auto_save)
         #加密
-        self.key = load_key()
-        self.cipher = Fernet(self.key)
-
+        public_file="public.pem"
+        if not os.path.exists(public_file):
+            self.get_key()
 
 
     def init_db(self):
@@ -264,7 +303,10 @@ class MemoApp:
         # 输出匹配结果
         # print(matches)
         for plaintext in matches:
-            encrypted = encrypt_text(plaintext,self.cipher)
+            
+            # encrypted = encrypt_text(plaintext,self.cipher)
+            encrypted = enc(plaintext)
+
             # print("加密后：", encrypted)
             replacements.append(encrypted)
         # print(replacements)
@@ -451,11 +493,16 @@ class MemoApp:
         # 输出匹配结果
         # print(matches)
         try:
-            decrypted = decrypt_text(matches[index],self.cipher)
-            # print("解密后：", decrypted)
-            self.show_dec(decrypted)
-        except:
-            messagebox.showwarning("警告", "解密失败，密钥错误！")
+            # decrypted = decrypt_text(matches[index],self.cipher)
+            try:
+                decrypted = dec(matches[index])
+                # print("解密后：", decrypted)
+                self.show_dec(decrypted)
+            except:
+                self.input_secret(matches[index])
+                
+        except Exception as e:
+            messagebox.showwarning("警告", f"解密失败，密钥/密码错误！{str(e)}")
 
 
     def make_clickable_text(self,text_widget, text, test_original,target_string="<ENC>***********<DEC>"):
@@ -623,6 +670,74 @@ class MemoApp:
 
         search_entry.focus_set()  # 聚焦到搜索框
 
+    def input_secret(self,ciphertext):
+        """输入密码"""
+        input_secret = tk.Toplevel(self.root)
+        input_secret.title("输入密码")
+        input_secret.geometry("400x70")
+
+        # search_label = tk.Label(search_popup, text="请输入搜索内容：", font=(self.font, 12))
+        # search_label.pack(padx=1,pady=1)
+
+        input_entry = tk.Entry(input_secret, width=40, font=(self.font, 12))
+        input_entry.pack(padx=5,pady=1)
+
+        def on_search(event=None):
+            """回车进行搜索"""
+            keyword = input_entry.get().strip()
+            # if keyword:
+            #     key_maker(keyword.encode())
+            #     search_popup.destroy()  # 关闭搜索框
+            # else:
+            #     key_maker(password=None)
+            try:
+                decrypted = dec(ciphertext,keyword)
+                self.show_dec(decrypted)
+            except TypeError as e:
+                messagebox.showwarning("警告", f"解密失败，密钥/密码错误！{str(e)}")
+            except ValueError as e:
+                messagebox.showwarning("警告", f"解密失败，密钥/密码错误！{str(e)}")
+            except:
+                messagebox.showwarning("警告", f"解密失败，密钥/密码错误！")
+        input_entry.bind("<Return>", on_search)
+
+        search_button = tk.Button(input_secret, text="确定", command=on_search, font=(self.font, 12), bg="#868E94", fg="white")
+        search_button.pack(pady=5)
+
+        input_entry.focus_set()  # 聚焦到搜索框
+
+    def get_key(self):
+        """创建密钥"""
+        get_key = tk.Toplevel(self.root)
+        get_key.title("创建密钥")
+        get_key.geometry("400x70")
+
+        # search_label = tk.Label(search_popup, text="请输入搜索内容：", font=(self.font, 12))
+        # search_label.pack(padx=1,pady=1)
+
+        input_entry = tk.Entry(get_key, width=40, font=(self.font, 12))
+        input_entry.pack(padx=5,pady=1)
+
+        def on_search(event=None):
+            """回车进行搜索"""
+            keyword = input_entry.get().strip()
+
+            try:
+                if keyword:
+                    key_maker(keyword.encode())
+                else:
+                    key_maker(password=None)
+                get_key.destroy()  # 关闭搜索框
+
+            except TypeError as e:
+                messagebox.showwarning("提示", f"密钥对已生成注意保存！{str(e)}")
+        input_entry.bind("<Return>", on_search)
+
+        save_button = tk.Button(get_key, text="确定", command=on_search, font=(self.font, 12), bg="#868E94", fg="white")
+        save_button.pack(pady=5)
+
+        input_entry.focus_set()  # 聚焦到搜索框
+
     def on_close(self):
         # 在这里可以添加一些自定义的关闭行为，例如确认框
         self.root.destroy()
@@ -641,11 +756,11 @@ from PIL import Image
 
 def tray():
     root = tk.Tk()
-    root.iconphoto(True, tk.PhotoImage(file="Memo\\static\\favicon.png"))
+    root.iconphoto(True, tk.PhotoImage(file="D:\\Backup\\备份\\备忘录\\Memo\\static\\favicon.png"))
     # root.set_ui()
     app = MemoApp(root)
     
-    image = Image.open("Memo\\static\\favicon.png")
+    image = Image.open("D:\\Backup\\备份\\备忘录\\Memo\\static\\favicon.png")
     menu = Menu(
         MenuItem("最小化", app.minimize),
         MenuItem("最大化", app.maximize),
