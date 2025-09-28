@@ -20,7 +20,9 @@ ENC_METHOD = os.getenv("ENC_METHOD")
 STRING_LENGTH = os.getenv("STRING_LENGTH")
 TO_BLOCKCHAIN = os.getenv("TO_BLOCKCHAIN") == "True"
 
-
+# --------------------------------------
+# AES
+# ----------------------------------------
 # KEY_FILE = "mome.key"
 if not ENC_METHOD == 'RSA':
     # 生成密钥（保存到本地，只需要生成一次）
@@ -45,7 +47,9 @@ def encrypt_text(plaintext: str, fernet: Fernet) -> str:
 def decrypt_text(token: str, fernet: Fernet) -> str:
     return fernet.decrypt(token.encode("utf-8")).decode("utf-8")
 
-
+# -----------------------------------
+# RSA
+# -------------------------------------
 def enc(plaintext):
     if ENC_METHOD == 'RSA':
         public_key = load_public()
@@ -60,12 +64,10 @@ def enc(plaintext):
 def dec(ciphertext,password = None):
     if ENC_METHOD == 'RSA':
         if password == None:
-            # print('无密码load')
             private_key = load_private()
         else:
             # password = getpass.getpass("输入私钥密码：").strip()
             private_key = load_private(password=password.encode())
-
         # 使用 ast.literal_eval 将字符串转换为字节串
         ciphertext = ast.literal_eval(ciphertext)
         # 现在 ciphertext 就是一个字节串类型的对象，可以传给加密解密函数了
@@ -197,10 +199,14 @@ class MemoApp:
         self.root.bind("<Control-b>", lambda event: self.on_close())
         self.root.bind("<Control-r>", lambda event: self.insert_text_angle_brackets())
         self.root.bind("<Alt-m>", lambda event: self.minimize())  # Alt + M 最小化
-        # self.root.bind("<Alt-n>", lambda event: self.get_key())  # Alt + M 最小化
 
-        
-        # self.root.bind("<Alt-x>", lambda event: self.maximize())  # Alt + X 最大化
+        self.root.bind("<Control-S>", lambda event: self.save_memo())
+        self.root.bind("<Control-F>", lambda event: self.show_search_popup())
+        self.root.bind("<Control-L>", lambda event: self.show_all_memos())
+        self.root.bind("<Control-B>", lambda event: self.on_close())
+        self.root.bind("<Control-R>", lambda event: self.insert_text_angle_brackets())
+        self.root.bind("<Alt-M>", lambda event: self.minimize())  # Alt + M 最小化
+        # self.root.bind("<Alt-n>", lambda event: self.get_key())  # Alt + M 最小化
 
 
         # 当窗口获得焦点时恢复透明度
@@ -221,7 +227,7 @@ class MemoApp:
         # self.memo_content.bind("<KeyRelease>", self.auto_save)
         #加密
         public_file="public.pem"
-        if not os.path.exists(public_file):
+        if not os.path.exists(public_file) and ENC_METHOD == 'RSA':
             self.get_key()
 
 
@@ -357,17 +363,17 @@ class MemoApp:
             # self.schedule_fold(title, content, timestamp)  # 安排折叠任务
             # set_user_memo(title,content)
 
+            if TO_BLOCKCHAIN:
+                if len(content) < int(STRING_LENGTH):#字符串小于1200才上链
+                    # threading.Thread(target=set_user_memo,args=(title,content,), daemon=True).start()
 
-            if len(content) < int(STRING_LENGTH) and TO_BLOCKCHAIN:#字符串小于1200才上链
-                # threading.Thread(target=set_user_memo,args=(title,content,), daemon=True).start()
+                    thread = threading.Thread(target=self.on_chain, args=(title,content), daemon=True)
+                    thread.start()
+                    # 在主线程中检查错误
+                    # check_thread_status(thread)
 
-                thread = threading.Thread(target=self.on_chain, args=(title,content), daemon=True)
-                thread.start()
-                # 在主线程中检查错误
-                # check_thread_status(thread)
-
-            else:
-                messagebox.showinfo("提示","字符串太长，已存入本地数据库，不进行上链操作！")
+                else:
+                    messagebox.showinfo("提示","字符串太长，已存入本地数据库，不进行上链操作！")
 
         else:
             # messagebox.showwarning("警告", "备忘录内容不能为空！")
@@ -679,17 +685,12 @@ class MemoApp:
         # search_label = tk.Label(search_popup, text="请输入搜索内容：", font=(self.font, 12))
         # search_label.pack(padx=1,pady=1)
 
-        input_entry = tk.Entry(input_secret, width=40, font=(self.font, 12))
+        input_entry = tk.Entry(input_secret, width=40, font=(self.font, 12), show="*")
         input_entry.pack(padx=5,pady=1)
 
         def on_search(event=None):
             """回车进行搜索"""
             keyword = input_entry.get().strip()
-            # if keyword:
-            #     key_maker(keyword.encode())
-            #     search_popup.destroy()  # 关闭搜索框
-            # else:
-            #     key_maker(password=None)
             try:
                 decrypted = dec(ciphertext,keyword)
                 self.show_dec(decrypted)
@@ -712,10 +713,7 @@ class MemoApp:
         get_key.title("创建密钥")
         get_key.geometry("400x70")
 
-        # search_label = tk.Label(search_popup, text="请输入搜索内容：", font=(self.font, 12))
-        # search_label.pack(padx=1,pady=1)
-
-        input_entry = tk.Entry(get_key, width=40, font=(self.font, 12))
+        input_entry = tk.Entry(get_key, width=40, font=(self.font, 12), show="*")
         input_entry.pack(padx=5,pady=1)
 
         def on_search(event=None):
@@ -728,9 +726,10 @@ class MemoApp:
                 else:
                     key_maker(password=None)
                 get_key.destroy()  # 关闭搜索框
+                messagebox.showwarning("提示", f"密钥对已生成注意保存！")
 
             except TypeError as e:
-                messagebox.showwarning("提示", f"密钥对已生成注意保存！{str(e)}")
+                messagebox.showwarning("提示", f"密钥对已生成出错了！{str(e)}")
         input_entry.bind("<Return>", on_search)
 
         save_button = tk.Button(get_key, text="确定", command=on_search, font=(self.font, 12), bg="#868E94", fg="white")
