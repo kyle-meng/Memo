@@ -6,7 +6,8 @@ import re
 import os
 from cryptography.fernet import Fernet
 from functools import partial
-from to_blockchain import set_user_info
+import queue
+from to_blockchain import set_user_memo
 from dotenv import load_dotenv
 
 load_dotenv()  # take environment variables
@@ -78,6 +79,16 @@ class PlaceholderText:
         if not current_text:
             self.text_widget.insert("1.0", self.placeholder)
             self.text_widget.config(fg="gray")
+
+
+
+def check_thread_status(thread):
+    if thread.is_alive():
+        print("Thread is still running...")
+        # 继续检查
+        threading.Timer(1, check_thread_status, args=[thread]).start()
+    else:
+        print("Thread has finished.")
 
 # 后续控件放置在这个标签上面
 
@@ -260,6 +271,15 @@ class MemoApp:
         result = self.replace_in_brackets(text, replacements)
         return result
     
+    def on_chain(self,title, content):
+        try:
+            # 执行任务的代码
+            set_user_memo(title, content)
+        except Exception as e:
+            # 将异常信息传递给主线程
+            # error_queue.put(str(e))
+            messagebox.showinfo("提示",f"上链失败！{str(e)}")
+
     def save_memo(self):
         """保存备忘录内容到数据库"""
         content = self.memo_content.get("1.0", tk.END).strip()
@@ -293,11 +313,18 @@ class MemoApp:
             self.memo_content.delete("1.0", tk.END)
             # messagebox.showinfo("提示", "备忘录保存成功！")
             # self.schedule_fold(title, content, timestamp)  # 安排折叠任务
-            # set_user_info(title,content)
+            # set_user_memo(title,content)
+
+
             if len(content) < int(STRING_LENGTH) and TO_BLOCKCHAIN:#字符串小于1200才上链
-                threading.Thread(target=set_user_info,args=(title,content,), daemon=True).start()
+                # threading.Thread(target=set_user_memo,args=(title,content,), daemon=True).start()
+
+                thread = threading.Thread(target=self.on_chain, args=(title,content), daemon=True)
+                thread.start()
+                # 在主线程中检查错误
+                # check_thread_status(thread)
+
             else:
-                # print("字符串太长，不进行上链操作")
                 messagebox.showinfo("提示","字符串太长，已存入本地数据库，不进行上链操作！")
 
         else:
