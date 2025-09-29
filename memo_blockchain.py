@@ -32,14 +32,14 @@ if not ENC_METHOD == 'RSA':
             f.write(key)
 
 # -------------------------------
-# 读取密钥
+# 读取密钥 Read the key
 # -------------------------------
 def load_key():
     with open(KEY_FILE, "rb") as f:
         return f.read()
 
 # -------------------------------
-# 3) 加解密
+# 3) 加解密 Encryption and decryption
 # -------------------------------
 def encrypt_text(plaintext: str, fernet: Fernet) -> str:
     return fernet.encrypt(plaintext.encode("utf-8")).decode("utf-8")
@@ -80,15 +80,15 @@ def dec(ciphertext,password = None):
         decrypted = decrypt_text(ciphertext,cipher)
         return decrypted
 
-# 圆角矩形函数
+# 圆角矩形函数 Rounded rectangle function
 def round_rect(x1, y1, x2, y2, r, canvas,bg = "#b4b2a4"):
-    # 画四个圆角
+    # 画四个圆角 # Draw four rounded corners
     canvas.create_oval(x1, y1, x1 + 2*r, y1 + 2*r, outline=bg, fill=bg)
     canvas.create_oval(x2 - 2*r, y1, x2, y1 + 2*r, outline=bg, fill=bg)
     canvas.create_oval(x1, y2 - 2*r, x1 + 2*r, y2, outline=bg, fill=bg)
     canvas.create_oval(x2 - 2*r, y2 - 2*r, x2, y2, outline=bg, fill=bg)
 
-    # # 画矩形部分
+    # # 画矩形部分 Draw the rectangle part 
     canvas.create_rectangle(x1 + r, y1, x2 - r, y2, outline=bg, fill=bg)
     canvas.create_rectangle(x1, y1 + r, x2, y2 - r, outline=bg, fill=bg)
 
@@ -121,7 +121,14 @@ class PlaceholderText:
 
 
 def check_thread_status(thread):
-    if thread.is_alive():
+
+    """
+    检查线程状态的函数，如果线程仍在运行，则会每秒检查一次直到线程结束
+    
+    参数:
+        thread: 需要检查状态的线程对象
+    """
+    if thread.is_alive():  # 检查线程是否还在运行
         print("Thread is still running...")
         # 继续检查
         threading.Timer(1, check_thread_status, args=[thread]).start()
@@ -303,13 +310,22 @@ class MemoApp:
         return re.sub(pattern, f'<ENC>{replacement}<DEC>', text)
 
     def re_and_enc(self,text):
-        replacements =[]
-        # 使用正则匹配括号内的内容
+        """
+        
+        使用正则表达式匹配并加密文本中特定标记内的内容
+        参数:
+            text (str): 需要处理的文本，包含<ENC>和<DEC>标记
+        返回:
+            str: 处理后的文本，标记内的内容已被加密
+        """
+        replacements =[]  # 用于存储加密后的文本列表
+        # 使用正则匹配括号内的内容，查找<ENC>和<DEC>之间的所有文本
         matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', text)
-        # 输出匹配结果
+        # 输出匹配结果（已注释）
         # print(matches)
         for plaintext in matches:
             
+            # 调用加密函数对匹配到的明文进行加密（使用self.cipher的版本已注释）
             # encrypted = encrypt_text(plaintext,self.cipher)
             encrypted = enc(plaintext)
 
@@ -428,7 +444,7 @@ class MemoApp:
             self.load_memos()
 
     def load_memos(self):
-        """从数据库加载近10分钟内的备忘录"""
+        """从数据库加载近fold_time_minutes内的备忘录"""
         self.clear_memos()
 
         # 获取当前时间的时间戳
@@ -738,21 +754,30 @@ from pystray import Icon, Menu, MenuItem
 from PIL import Image
 
 def tray():
+    # 获取当前工作目录，并构建favicon.png文件的完整路径
     file_path = os.path.join(os.getcwd(),'static\\favicon.png')
 
+    # 创建Tkinter根窗口
     root = tk.Tk()
+    # 设置窗口图标
     root.iconphoto(True, tk.PhotoImage(file=file_path))
 
+    # 创建MemoApp应用程序实例
     app = MemoApp(root)
     
+    # 打开图标图片
     image = Image.open(file_path)
+    # 创建系统托盘菜单，包含最小化、最大化和退出服务选项
     menu = Menu(
         MenuItem("最小化", app.minimize),
         MenuItem("最大化", app.maximize),
         MenuItem("退出服务", app.on_close)
     )
+    # 创建系统托盘图标
     icon = Icon("Memo", image, "备忘录", menu)
+    # 启动系统托盘图标的后台守护线程
     threading.Thread(target=icon.run, daemon=True).start()
+    # 启动Tkinter主事件循环
     root.mainloop()
 
 if __name__ == "__main__":

@@ -120,7 +120,14 @@ class PlaceholderText:
 
 
 def check_thread_status(thread):
-    if thread.is_alive():
+
+    """
+    检查线程状态的函数，如果线程仍在运行，则会每秒检查一次直到线程结束
+    
+    参数:
+        thread: 需要检查状态的线程对象
+    """
+    if thread.is_alive():  # 检查线程是否还在运行
         print("Thread is still running...")
         # 继续检查
         threading.Timer(1, check_thread_status, args=[thread]).start()
@@ -407,7 +414,7 @@ class MemoApp:
             self.load_memos()
 
     def load_memos(self):
-        """从数据库加载近10分钟内的备忘录"""
+        """从数据库加载近fold_time_minutes内的备忘录"""
         self.clear_memos()
 
         # 获取当前时间的时间戳
@@ -717,21 +724,30 @@ from pystray import Icon, Menu, MenuItem
 from PIL import Image
 
 def tray():
+    # 获取当前工作目录，并构建静态文件路径
     file_path = os.path.join(os.getcwd(),'static\\favicon.png')
 
+    # 创建Tkinter根窗口
     root = tk.Tk()
+    # 设置窗口图标
     root.iconphoto(True, tk.PhotoImage(file=file_path))
 
+    # 创建MemoApp应用程序实例
     app = MemoApp(root)
     
+    # 打开图标图片
     image = Image.open(file_path)
+    # 创建系统托盘菜单
     menu = Menu(
-        MenuItem("最小化", app.minimize),
-        MenuItem("最大化", app.maximize),
-        MenuItem("退出服务", app.on_close)
+        MenuItem("最小化", app.minimize),      # 最小化菜单项
+        MenuItem("最大化", app.maximize),      # 最大化菜单项
+        MenuItem("退出服务", app.on_close)    # 退出服务菜单项
     )
+    # 创建系统托盘图标
     icon = Icon("Memo", image, "备忘录", menu)
+    # 启动系统托盘图标线程，设置为守护线程
     threading.Thread(target=icon.run, daemon=True).start()
+    # 启动Tkinter主事件循环
     root.mainloop()
 
 if __name__ == "__main__":
