@@ -9,7 +9,7 @@ import ast
 
 from cryptography.fernet import Fernet
 from functools import partial
-from rsa_dec import load_public,load_private,rsa_encrypt,rsa_decrypt,make_key,key_maker
+from .rsa_dec import load_public,load_private,rsa_encrypt,rsa_decrypt,make_key,key_maker
 from dotenv import load_dotenv
 
 load_dotenv()  # take environment variables
@@ -144,7 +144,8 @@ class MemoApp:
         self.bg = "#ECF0F1"
         self.root.geometry("300x480+950+0")
         self.root.configure(bg=self.bg)  # 背景颜色
-        self.root.overrideredirect(True)
+        if os.name == 'nt':
+            self.root.overrideredirect(True)
         
 
         # self.root.iconify()  # 最小化窗口，保留在任务栏中
@@ -725,7 +726,7 @@ from PIL import Image
 
 def tray():
     # 获取当前工作目录，并构建静态文件路径
-    file_path = os.path.join(os.getcwd(),'static\\favicon.png')
+    file_path = os.path.join(os.path.dirname(__file__), 'static', 'favicon.png')
 
     # 创建Tkinter根窗口
     root = tk.Tk()
@@ -744,7 +745,7 @@ def tray():
         MenuItem("退出服务", app.on_close)    # 退出服务菜单项
     )
     # 创建系统托盘图标
-    icon = Icon("Memo", image, "备忘录", menu)
+    icon = Icon("Memo", image, "Memo", menu)
     # 启动系统托盘图标线程，设置为守护线程
     threading.Thread(target=icon.run, daemon=True).start()
     # 启动Tkinter主事件循环

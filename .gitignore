@@ -26,3 +26,5 @@ TestResults.xml
 *.db
 *.ipynb
 *.pem
+memo.egg-info/
+__pycache__/

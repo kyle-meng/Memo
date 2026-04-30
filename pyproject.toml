@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memo"
+version = "0.1.0"
+authors = [
+  { name="meng" },
+]
+description = "A memo/note-taking application with local storage and optional blockchain features"
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "cffi==2.0.0",
+    "cryptography==46.0.1",
+    "dotenv==0.9.9",
+    "pillow==11.3.0",
+    "pycparser==2.23",
+    "pystray==0.19.5",
+    "python-dotenv==1.1.1",
+    "six==1.17.0"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+blockchain = [
+    "web3==7.13.0",
+    "eth-account==0.13.7",
+    "requests==2.32.5",
+    "aiohttp==3.12.15",
+]
+
+[project.scripts]
+memo = "memo.memo:tray"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"memo" = ["static/*"]
