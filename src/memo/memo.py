@@ -4,13 +4,17 @@ import sqlite3
 import time
 import re
 import os
-import getpass
 import ast
+import threading
+from pystray import Icon, Menu, MenuItem
+from PIL import Image,ImageTk
+import sys
 
 from cryptography.fernet import Fernet
 from functools import partial
 from .rsa_dec import load_public,load_private,rsa_encrypt,rsa_decrypt,make_key,key_maker,PUBLIC_FILE
 from dotenv import load_dotenv
+# import getpass
 
 load_dotenv()  # take environment variables
 FOLD_TIME = float(os.getenv("FOLD_TIME"))
@@ -720,14 +724,12 @@ class MemoApp:
     def on_focus_out(self, event):
         self.root.attributes('-alpha', 0.1)  # 设置窗口几乎透明
 
-import threading
-from pystray import Icon, Menu, MenuItem
-from PIL import Image
+
 
 def tray():
     # 获取当前工作目录，并构建静态文件路径
     # 兼容 PyInstaller 打包后的路径
-    import sys
+    
     if hasattr(sys, '_MEIPASS'):
         base_path = sys._MEIPASS
     else:
@@ -736,14 +738,14 @@ def tray():
 
     # 创建Tkinter根窗口
     root = tk.Tk()
+    # 打开图标图片
+    image = Image.open(file_path)
     # 设置窗口图标
-    root.iconphoto(True, tk.PhotoImage(file=file_path))
+    icon_image = ImageTk.PhotoImage(image)
+    root.iconphoto(True, icon_image)
 
     # 创建MemoApp应用程序实例
     app = MemoApp(root)
-    
-    # 打开图标图片
-    image = Image.open(file_path)
     # 创建系统托盘菜单
     menu = Menu(
         MenuItem("最小化", app.minimize),      # 最小化菜单项

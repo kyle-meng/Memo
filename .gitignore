@@ -35,3 +35,4 @@ memo.spec
 memo_app.spec
 memo_app.py
 run_memo.py
+process_icon.py
