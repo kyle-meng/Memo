@@ -291,7 +291,7 @@ class MemoApp:
             return f'<ENC>{replacement}<DEC>'
 
         # 使用re.sub并传入替换函数
-        return re.sub(pattern, replacer, text)
+        return re.sub(pattern, replacer, text, flags=re.DOTALL)
 
     def replace_same_in_brackets(self,text, replacement):
         """
@@ -307,12 +307,12 @@ class MemoApp:
         # 正则表达式匹配括号内的内容
         pattern = r'\<ENC\>(.*?)\<DEC\>'  # 匹配圆括号内的内容
         # 使用re.sub替换括号内的内容
-        return re.sub(pattern, f'<ENC>{replacement}<DEC>', text)
+        return re.sub(pattern, f'<ENC>{replacement}<DEC>', text, flags=re.DOTALL)
 
     def re_and_enc(self,text):
         replacements =[]
         # 使用正则匹配括号内的内容
-        matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', text)
+        matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', text, flags=re.DOTALL)
         # 输出匹配结果
         # print(matches)
         for plaintext in matches:
@@ -482,7 +482,7 @@ class MemoApp:
         :param index: 区分点击区域的索引
         """
         # print(f"点击了第 {index + 1} 段加密内容")
-        matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', test_original)
+        matches = re.findall(r'\<ENC\>(.*?)\<DEC\>', test_original, flags=re.DOTALL)
         # 输出匹配结果
         # print(matches)
         try:
