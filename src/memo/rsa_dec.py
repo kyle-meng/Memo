@@ -5,8 +5,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()  # take environment variables
 
-PUBLIC_FILE = os.getenv("PUBLIC_FILE")
-PRIVATE_FILE = os.getenv("PRIVATE_FILE")
+PUBLIC_FILE = os.getenv("PUBLIC_FILE", "public.pem")
+PRIVATE_FILE = os.getenv("PRIVATE_FILE", "private.pem")
 
 
 # 2. 公钥加密

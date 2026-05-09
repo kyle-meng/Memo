@@ -28,3 +28,10 @@ TestResults.xml
 *.pem
 memo.egg-info/
 __pycache__/
+static/
+build/
+dist/
+memo.spec
+memo_app.spec
+memo_app.py
+run_memo.py

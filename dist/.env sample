@@ -1,6 +1,0 @@
-#Memo
-FOLD_TIME = 1               # MINS TO FOLD
-ENC_METHOD = RSA            # AES/RSA
-KEY_FILE = mome.key         # KEY FILE PATH
-PUBLIC_FILE = public.pem
-PRIVATE_FILE = private.pem

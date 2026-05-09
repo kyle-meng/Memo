@@ -9,7 +9,7 @@ import ast
 
 from cryptography.fernet import Fernet
 from functools import partial
-from .rsa_dec import load_public,load_private,rsa_encrypt,rsa_decrypt,make_key,key_maker
+from .rsa_dec import load_public,load_private,rsa_encrypt,rsa_decrypt,make_key,key_maker,PUBLIC_FILE
 from dotenv import load_dotenv
 
 load_dotenv()  # take environment variables
@@ -18,6 +18,7 @@ KEY_FILE = os.getenv("KEY_FILE")
 ENC_METHOD = os.getenv("ENC_METHOD")
 STRING_LENGTH = os.getenv("STRING_LENGTH")
 TO_BLOCKCHAIN = os.getenv("TO_BLOCKCHAIN") == "True"
+DB_FILE = os.getenv("DB_FILE", "memo.db")
 
 # --------------------------------------
 # AES
@@ -233,14 +234,13 @@ class MemoApp:
         # 自动保存用户输入
         # self.memo_content.bind("<KeyRelease>", self.auto_save)
         #加密
-        public_file="public.pem"
-        if not os.path.exists(public_file) and ENC_METHOD == 'RSA':
+        if not os.path.exists(PUBLIC_FILE) and ENC_METHOD == 'RSA':
             self.get_key()
 
 
     def init_db(self):
         """初始化数据库"""
-        conn = sqlite3.connect('memo.db')
+        conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS memos
                      (timestamp REAL, title TEXT, content TEXT)''')
@@ -338,7 +338,7 @@ class MemoApp:
             title = content[:8]  # 简略标题
 
             # 检查数据库是否已有相同内容，若有则更新时间戳
-            conn = sqlite3.connect('memo.db')
+            conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
             c.execute("SELECT * FROM memos WHERE content = ?", (content,))
             existing_memo = c.fetchone()
@@ -397,7 +397,7 @@ class MemoApp:
             title = content[:10]  # 简略标题
 
             # 检查数据库是否已有相同内容，若有则更新时间戳
-            conn = sqlite3.connect('memo.db')
+            conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
             c.execute("SELECT * FROM memos WHERE content = ?", (content,))
             existing_memo = c.fetchone()
@@ -423,7 +423,7 @@ class MemoApp:
         # 只加载近10分钟内的记录
         time_threshold = current_time - (self.fold_time_minutes * 60)  # 10分钟
 
-        conn = sqlite3.connect('memo.db')
+        conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute("SELECT * FROM memos WHERE timestamp > ?", (time_threshold,))
         results = c.fetchall()
@@ -553,7 +553,7 @@ class MemoApp:
 
     def search_memo(self, keyword):
         """根据输入框的内容进行全文搜索备忘录"""
-        conn = sqlite3.connect('memo.db')
+        conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
 
         # 使用LIKE进行全文搜索，匹配标题和内容
@@ -592,7 +592,7 @@ class MemoApp:
 
     def show_all_memos(self):
         """展示所有备忘录数据"""
-        conn = sqlite3.connect('memo.db')
+        conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute("SELECT * FROM memos ORDER BY timestamp DESC")
         results = c.fetchall()
@@ -726,7 +726,13 @@ from PIL import Image
 
 def tray():
     # 获取当前工作目录，并构建静态文件路径
-    file_path = os.path.join(os.path.dirname(__file__), 'static', 'favicon.png')
+    # 兼容 PyInstaller 打包后的路径
+    import sys
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(__file__)
+    file_path = os.path.join(base_path, 'static', 'favicon.png')
 
     # 创建Tkinter根窗口
     root = tk.Tk()

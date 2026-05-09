@@ -1,8 +1,15 @@
 #Memo
 FOLD_TIME = 0.1             # MINS TO FOLD
-KEY_FILE = mome.key         # KEY FILE PATH
+DB_FILE = memo.db           # DB FILE PATH
+
+#ENC_METHOD = RSA / AES
+ENC_METHOD = RSA
+KEY_FILE = mome.key         # AES KEY FILE PATH
+PUBLIC_FILE = public.pem    # RSA KEY FILE PATH
+PRIVATE_FILE = private.pem  # RSA KEY FILE PATH
+
 #blockchain                 # If you don't need it, you can delete the following part
-TO_BLOCKCHAIN = True        # Whether to upload the blockchain
+TO_BLOCKCHAIN = False        # Whether to upload the blockchain
 ENC_FULL_OR_NOT = True      # True/False
 STRING_LENGTH = 1200        # Limit the length of the string on the chain
 PROVIDER_URL = http://localhost:8545
