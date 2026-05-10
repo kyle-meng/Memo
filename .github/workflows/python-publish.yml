@@ -105,13 +105,12 @@ jobs:
 
         - name: Build with PyInstaller
           run: |
-            # 根据不同操作系统处理路径分隔符（Windows 是 ; 其它是 :）
-            # 使用变量处理 --add-data 的差异
             python -m PyInstaller -F -w \
               --name ${{ matrix.artifact_name }} \
               --add-data "src/memo/static${{ runner.os == 'Windows' && ';' || ':' }}static" \
               --hidden-import=PIL._tkinter_finder \
               run_memo.py
+          shell: bash
 
         - name: Upload binaries to Release
           uses: softprops/action-gh-release@v2
