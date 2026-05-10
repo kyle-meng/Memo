@@ -14,20 +14,10 @@ A lightweight, secure, and cross-platform memo/note-taking application built wit
 
 ### 1. Basic Installation
 
-Clone the repository and install it as a standard PyPI package:
+Install it directly from PyPI:
 
 ```bash
-git clone https://github.com/kyle-meng/Memo.git
-cd Memo
-pip install .
-```
-
-### 2. With Blockchain Support
-
-If you want to use the blockchain upload features, install the optional dependencies:
-
-```bash
-pip install .[blockchain]
+pip install tiny-memo
 ```
 
 ## Configuration
