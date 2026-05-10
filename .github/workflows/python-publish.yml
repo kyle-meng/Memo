@@ -76,11 +76,11 @@ build-binaries:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: memo_app-linux
+            artifact_name: memo-linux
           - os: windows-latest
-            artifact_name: memo_app-windows.exe
+            artifact_name: memo-windows.exe
           - os: macos-latest
-            artifact_name: memo_app-macos
+            artifact_name: memo-macos
 
     steps:
       - uses: actions/checkout@v4
