@@ -36,3 +36,4 @@ memo_app.spec
 memo_app.py
 run_memo.py
 process_icon.py
+tiny_memo.egg-info/

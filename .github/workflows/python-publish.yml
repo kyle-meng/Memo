@@ -6,7 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Upload Python Package
+name: Upload Python Package and Binaries
 
 on:
   release:
@@ -68,3 +68,55 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+
+build-binaries:
+    name: Build Binary on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: memo_app-linux
+          - os: windows-latest
+            artifact_name: memo_app-windows.exe
+          - os: macos-latest
+            artifact_name: memo_app-macos
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.5" 
+          cache: 'pip'         
+
+      - name: Install System Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk  # 代码里引用了 PIL._tkinter_finder，Linux 需要 tk 库
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow  # 确保安装了 Pillow 和 PyInstaller
+
+      - name: Build with PyInstaller
+        run: |
+          # 根据不同操作系统处理路径分隔符（Windows 是 ; 其它是 :）
+          # 使用变量处理 --add-data 的差异
+          python -m PyInstaller -F -w \
+            --name ${{ matrix.artifact_name }} \
+            --add-data "src/memo/static${{ runner.os == 'Windows' && ';' || ':' }}static" \
+            --hidden-import=PIL._tkinter_finder \
+            run_memo.py
+
+      - name: Upload binaries to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/${{ matrix.artifact_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
