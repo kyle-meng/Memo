@@ -17,7 +17,7 @@ A lightweight, secure, and cross-platform memo/note-taking application built wit
 Clone the repository and install it as a standard PyPI package:
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/kyle-meng/Memo.git
 cd Memo
 pip install .
 ```
