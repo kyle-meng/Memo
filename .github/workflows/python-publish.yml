@@ -106,6 +106,7 @@ jobs:
         - name: Build with PyInstaller
           run: |
             python -m PyInstaller -F -w \
+              --paths src \
               --name ${{ matrix.artifact_name }} \
               --add-data "src/memo/static${{ runner.os == 'Windows' && ';' || ':' }}static" \
               --hidden-import=PIL._tkinter_finder \
