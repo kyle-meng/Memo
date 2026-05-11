@@ -103,6 +103,17 @@ jobs:
             pip install -r requirements.txt
             pip install pyinstaller pillow  # 确保安装了 Pillow 和 PyInstaller
 
+        - name: Install UPX
+          run: |
+            if [ "$RUNNER_OS" == "Linux" ]; then
+              sudo apt-get update && sudo apt-get install -y upx
+            elif [ "$RUNNER_OS" == "Windows" ]; then
+              choco install upx
+            elif [ "$RUNNER_OS" == "macOS" ]; then
+              brew install upx
+            fi
+          shell: bash
+
         - name: Build with PyInstaller
           run: |
             python -m PyInstaller -F -w \
@@ -110,6 +121,13 @@ jobs:
               --name ${{ matrix.artifact_name }} \
               --add-data "src/memo/static${{ runner.os == 'Windows' && ';' || ':' }}static" \
               --hidden-import=PIL._tkinter_finder \
+              --exclude-module unittest \
+              --exclude-module email \
+              --exclude-module html \
+              --exclude-module http \
+              --exclude-module xml \
+              --exclude-module pydoc \
+              --exclude-module setuptools \
               run_memo.py
           shell: bash
 
